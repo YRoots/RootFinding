@@ -72,7 +72,10 @@ def solve(funcs,a=-1,b=1, verbose = False, returnBoundingBoxes = False, exact=Fa
     NOTE: The solve function is only guaranteed to work well on systems of equations where each function
     is continuous and smooth and each root in the interval is a simple root. If a function is not
     continuous and smooth on an interval or an infinite number of roots exist in the interval, the
-    solver may get stuck in recursion or the kernel may crash.
+    solver may get stuck in recursion or the kernel may crash. Nearly singular systems (e.g. equations that
+    are almost multiples of each other, so the Jacobian at a root is close to singular) can also hit
+    Python's recursion limit and raise a RecursionError instead of returning the root; raising
+    minBoundingIntervalSize does not prevent this, and lowering it can make the solver hang (see below).
 
     Examples
     --------
@@ -124,8 +127,14 @@ def solve(funcs,a=-1,b=1, verbose = False, returnBoundingBoxes = False, exact=Fa
         question is in [-1,1], and relative otherwise. So if an interval has an endpoint of magnitude > 1, then
         minBoundingIntervalSize is multiplied by that value for that dimension.
 
-        Warning: choose this value with care. If it is too large (too wide), the solver may not find
-        all the roots. If it is too small, solving may take a very long time or hang.
+        Warning: this value is the re-solve loop's only stopping rule. It must be positive; a value <= 0
+        makes the solver subdivide forever. Positive values that are too small can also make the solver hang,
+        apparently once they ask for more precision than floating point can resolve the root to. Near machine
+        precision (around 1e-14) this can happen even for well-conditioned systems, and for ill-conditioned
+        systems at much larger values (e.g. around 1e-11 for two lines whose coefficients differ by 1e-9).
+        Keep this well above the accuracy the root can actually be found to. Larger values give looser boxes
+        and are faster, but boxes too large to separate nearby roots may report them together or miss some,
+        and a value as wide as the search interval also turns off the initial subdivision of it.
     max_cpu : int
         Defaults to 1. Max number of allowed cpus when solving subdivided regions.
     parallel_depth : int
