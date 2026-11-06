@@ -127,14 +127,12 @@ def solve(funcs,a=-1,b=1, verbose = False, returnBoundingBoxes = False, exact=Fa
         question is in [-1,1], and relative otherwise. So if an interval has an endpoint of magnitude > 1, then
         minBoundingIntervalSize is multiplied by that value for that dimension.
 
-        Warning: this value is the re-solve loop's only stopping rule. It must be positive; a value <= 0
-        makes the solver subdivide forever. Positive values that are too small can also make the solver hang,
-        apparently once they ask for more precision than floating point can resolve the root to. Near machine
-        precision (around 1e-14) this can happen even for well-conditioned systems, and for ill-conditioned
-        systems at much larger values (e.g. around 1e-11 for two lines whose coefficients differ by 1e-9).
-        Keep this well above the accuracy the root can actually be found to. Larger values give looser boxes
-        and are faster, but boxes too large to separate nearby roots may report them together or miss some,
-        and a value as wide as the search interval also turns off the initial subdivision of it.
+        Warning: if this is too large, the bounding boxes may be too wide to separate nearby roots,
+        so some roots may be missed or reported together. If it is too small, the solver may take a
+        very long time or hang. This happens when the error in a root's location becomes bigger than
+        minBoundingIntervalSize, so the solver can never shrink the box enough to stop. Ill-conditioned
+        systems have larger errors, so they tend to hang at wider values of minBoundingIntervalSize.
+        Keep it well above the accuracy the roots can actually be found to.
     max_cpu : int
         Defaults to 1. Max number of allowed cpus when solving subdivided regions.
     parallel_depth : int
